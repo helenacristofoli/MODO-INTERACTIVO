@@ -1,0 +1,323 @@
+/* ── Fuente personalizada ─────────────────────────────────── */
+@font-face {
+    font-family: 'IntoDotMatrix';
+    src: url('assets/fonts/intodotmatrix.ttf') format('truetype');
+}
+
+/* ── Variables — paleta FIFA World Cup 2026 ───────────────── */
+:root {
+    --color-fondo:      #0D0D0D;
+    --color-gold:       #C9A84C;
+    --color-gold-light: #F0D080;
+    --color-green:      #4A7C59;
+    --color-blanco:     #FFFFFF;
+    --color-gris:       #888888;
+    --color-superficie: #141414;
+    --color-borde:      #2A2A2A;
+
+    --font-marca:       'IntoDotMatrix', monospace;
+    --font-ui:          sans-serif;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ── Body / pantalla completa ─────────────────────────────── */
+body {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-fondo);
+    font-family: var(--font-ui);
+    color: var(--color-blanco);
+    overflow: hidden;
+}
+
+/* ── Pantallas ────────────────────────────────────────────── */
+.pantalla {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: 100%;
+    padding: 32px 40px 28px;
+    text-align: center;
+    overflow-y: auto;
+}
+
+.pantalla.activa {
+    display: flex;
+}
+
+/* ── Logo ─────────────────────────────────────────────────── */
+.logo-kiosk {
+    width: 100%;
+    max-width: 520px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid var(--color-blanco);
+}
+
+.logo-kiosk img {
+    width: 100%;
+    height: auto;
+}
+
+/* ── Pantalla: Scanner ────────────────────────────────────── */
+#pantalla-scanner {
+    background-image: url('assets/Modo_mundial_fondo_app.png');
+    background-size: cover;
+    background-position: center;
+    position: relative;
+}
+
+/* Capa oscura encima de la imagen, para que el logo y el video
+   sean legibles sobre el fondo colorido */
+#pantalla-scanner::before {
+    content: '';
+    position: absolute;
+    inset: 0;                        /* equivale a top/right/bottom/left: 0 */
+    background: rgba(0, 0, 0, 0.55); /* negro al 55% de opacidad */
+    z-index: 0;
+}
+
+/* Todo el contenido de la pantalla tiene que estar ENCIMA
+   del overlay — z-index: 1 los saca adelante */
+#pantalla-scanner .logo-kiosk,
+#pantalla-scanner #camara,
+#pantalla-scanner #canvas,
+#pantalla-scanner #mensaje-scanner {
+    position: relative;
+    z-index: 1;
+}
+
+ #camara {
+    width: 280px;
+    height: 280px;
+    object-fit: cover;
+    border: 1.5px solid var(--color-blanco);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+#mensaje-scanner {
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    color: var(--color-gris);
+}
+
+/* ── Pantalla: Menú ───────────────────────────────────────── */
+.menu-tagline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 28px;
+}
+
+.menu-tagline h1 {
+    font-size: 1.2rem;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: var(--color-blanco);
+}
+
+.tag-izq,
+.tag-der {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 5px;
+    color: var(--color-gold);
+}
+
+/* ── Layer blocks ─────────────────────────────────────────── */
+.layer-block {
+    width: 100%;
+    max-width: 700px;
+    margin-bottom: 20px;
+}
+
+.layer-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.layer-num {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #555;
+    white-space: nowrap;
+}
+
+.layer-name {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    white-space: nowrap;
+}
+
+.layer-gold  { color: var(--color-gold); }
+.layer-green { color: var(--color-green); }
+.layer-grey  { color: var(--color-gris); }
+
+.layer-divider {
+    flex: 1;
+    height: 0.5px;
+    background: #222;
+}
+
+.layer-status {
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    color: #444;
+    min-width: 90px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.layer-status.activo {
+    color: var(--color-gold);
+}
+
+/* ── Filas de botones ─────────────────────────────────────── */
+.btn-row {
+    display: grid;
+    gap: 10px;
+}
+
+.row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.row-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+/* ── Botones de preset ────────────────────────────────────── */
+.btn-preset {
+    background-color: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: 6px;
+    padding: 18px 10px 14px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.12s, background-color 0.12s;
+}
+
+.btn-preset:hover {
+    border-color: #444;
+    background-color: #1A1A1A;
+}
+
+/* Estados seleccionados por layer */
+.btn-preset.sel-visual  { border-color: var(--color-gold);  background-color: #1A1600; }
+.btn-preset.sel-effects { border-color: var(--color-green); background-color: #0A1410; }
+.btn-preset.sel-color   { border-color: var(--color-gris);  background-color: #181818; }
+
+/* Número */
+.btn-num {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #333;
+}
+
+.btn-preset.sel-visual  .btn-num { color: var(--color-gold); }
+.btn-preset.sel-effects .btn-num { color: var(--color-green); }
+.btn-preset.sel-color   .btn-num { color: var(--color-gris); }
+
+/* Etiqueta */
+.btn-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--color-gris);
+    line-height: 1.3;
+}
+
+.btn-preset.sel-visual  .btn-label,
+.btn-preset.sel-effects .btn-label,
+.btn-preset.sel-color   .btn-label {
+    color: var(--color-blanco);
+}
+
+/* Punto indicador */
+.btn-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-top: 2px;
+}
+
+.btn-preset.sel-visual  .btn-dot { background: var(--color-gold); }
+.btn-preset.sel-effects .btn-dot { background: var(--color-green); }
+.btn-preset.sel-color   .btn-dot { background: var(--color-gris); }
+
+/* ── Pantalla: Confirmación ───────────────────────────────── */
+#pantalla-confirmacion p {
+    font-size: 1rem;
+    color: var(--color-gris);
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+}
+
+#btn-reiniciar {
+    padding: 18px 48px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    background-color: var(--color-gold);
+    color: var(--color-fondo);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+
+#btn-reiniciar:hover {
+    background-color: var(--color-gold-light);
+}
+
+/* ── Barra de tiempo de sesión ── */
+#barra-tiempo {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    height: 6px;
+    background-color: #222;
+    border-radius: 3px;
+    margin-bottom: 24px;
+    overflow: visible;
+}
+
+#progreso-tiempo {
+    height: 100%;
+    width: 100%;                      /* empieza lleno */
+    background-color: var(--color-gold, #C9A84C);
+    border-radius: 3px;
+    transition: width 1s linear;     /* se achica suavemente cada segundo */
+}
+
+#contador-tiempo {
+    position: absolute;
+    right: 0;
+    top: -22px;
+    font-size: 0.85rem;
+    color: #888;
+    font-family: monospace;
+}
+
+/* Cuando quedan pocos segundos, la barra se pone roja */
+#progreso-tiempo.urgente {
+    background-color: #e05252;
+}

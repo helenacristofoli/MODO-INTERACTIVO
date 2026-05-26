@@ -1,0 +1,15 @@
+{
+  "websocket": {
+    "port": 8080
+  },
+  "resolume": {
+    "ip": "127.0.0.1",
+    "port": 7000
+  },
+  "presets": {
+    "1": "/composition/layers/1/clips/1/connect",
+    "2": "/composition/layers/1/clips/2/connect",
+    "3": "/composition/layers/1/clips/3/connect",
+    "4": "/composition/layers/1/clips/4/connect"
+  }
+}
