@@ -1,0 +1,13 @@
+﻿# Node
+nodo3-bridge/node_modules/
+
+# Python
+nodo1-caja/__pycache__/
+nodo1-caja/.venv/
+
+# QR generados (opcionales, comentá si querés mantenerlos)
+# nodo1-caja/codes/*.png
+
+# Certificados locales
+nodo3-bridge/*.pem
+nodo2-kiosk/*.pem
