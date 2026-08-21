@@ -9,34 +9,39 @@ const CONFIG = {
     PUERTO_BRIDGE: 8080,
 };
 
-// ============================================================
-// MAPEO DE LAYERS → PRESETS OSC
-//
-// Cada layer tiene sus clips en Resolume:
-//   Layer 01 Visuales  → layer 1, clips 1-4
-//   Layer 02 Efectos   → layer 2, clips 5-8
-//   Layer 03 Color     → layer 3, clips 9-10
-//
-// El "preset" que se envía al bridge es el número de clip.
-// Análogía C: es como un enum con offset por sección.
-// ============================================================
+// Clave del preset idle en config.json del bridge — no es un preset
+// seleccionable desde la UI, por eso vive aparte de PRESETS.
+const PRESET_IDLE = "visual_idle";
 
-const OSC_MAP = {
-    visual:  [1, 2, 3, 4],
-    effects: [5, 6, 7, 8],
-    color:   [9, 10],
+// Claves de "clear" por layer — apagan la capa completa en Resolume
+const CLAVES_CLEAR = {
+    effects: "efecto_clear",
+    color:   "color_clear",
 };
 
-const OSC_LAYER = {
-    visual:  1,
-    effects: 2,
-    color:   3,
+// ============================================================
+// PRESETS — cargados dinámicamente desde config.json
+//
+// Antes esto era dos arrays fijos (ETIQUETAS y OSC_MAP) escritos
+// a mano en este archivo. Ahora se llenan en runtime leyendo
+// config.json, igual que llenarías un array de structs con
+// fread() en vez de inicializarlo en el código fuente.
+//
+// Estructura resultante, por layer:
+//   PRESETS.visual[idx] = { id, label, thumbnail }
+// ============================================================
+
+let PRESETS = {
+    visual:  [],
+    effects: [],
+    color:   [],
 };
 
-const ETIQUETAS = {
-    visual:  ["ESTADIO", "CAMPO",  "TROFEO",  "MULTITUD"],
-    effects: ["GLITCH",  "STROBE", "BLUR",    "MIRROR"],
-    color:   ["DORADO",  "VERDE"],
+// IDs de los contenedores HTML donde se inyecta cada fila de botones
+const CONTENEDORES = {
+    visual:  "row-visual",
+    effects: "row-effects",
+    color:   "row-color",
 };
 
 // Estado de selección — una por layer, null = sin selección
@@ -54,6 +59,7 @@ const pantallas = {
     scanner:      document.getElementById("pantalla-scanner"),
     menu:         document.getElementById("pantalla-menu"),
     confirmacion: document.getElementById("pantalla-confirmacion"),
+    despedida:    document.getElementById("pantalla-despedida"),
 };
 
 const elementoVideo  = document.getElementById("camara");
@@ -65,11 +71,59 @@ let codigoActual = null;
 
 // ── Sesión con temporizador ──────────────────────────────────
 const DURACION_SESION = 60;   // segundos — cambiá este número para ajustar
+const DURACION_DESPEDIDA = 4; // TEMPORAL para diagnóstico — volver a 4 después
 let temporizadorSesion = null; // como un file descriptor: null = sin sesión activa
 let segundosRestantes  = 0;
 
 const barraProgreso  = document.getElementById("progreso-tiempo");
 const contadorTiempo = document.getElementById("contador-tiempo");
+
+// ============================================================
+// PARTE 0: CARGA DE CONFIG.JSON Y GENERACIÓN DE BOTONES
+// ============================================================
+
+async function cargarPresets() {
+    try {
+        const respuesta = await fetch("config.json");
+        const datos     = await respuesta.json();
+
+        PRESETS.visual  = datos.visual  || [];
+        PRESETS.effects = datos.effects || [];
+        PRESETS.color   = datos.color   || [];
+
+        console.log("Presets cargados:", PRESETS);
+        return true;
+
+    } catch (error) {
+        console.error("Error cargando config.json:", error);
+        mensajeScanner.textContent = "Error de configuración. Avisa al personal.";
+        return false;
+    }
+}
+
+function renderizarBotones() {
+    for (const layer in CONTENEDORES) {
+        const contenedor = document.getElementById(CONTENEDORES[layer]);
+        contenedor.innerHTML = ""; // limpia por si se vuelve a renderizar
+
+        PRESETS[layer].forEach((preset, idx) => {
+            const boton = document.createElement("button");
+            boton.className = "btn-preset";
+            boton.dataset.layer = layer;
+            boton.dataset.idx   = idx;
+
+            boton.innerHTML = `
+                <div class="btn-frame-wrap">
+                    <div class="btn-thumb" style="background-image: url('${preset.thumbnail}');"></div>
+                    <img class="btn-frame" src="assets/btn_frame.png" alt="">
+                </div>
+                <span class="btn-label">${preset.label}</span>
+            `;
+
+            contenedor.appendChild(boton);
+        });
+    }
+}
 
 // ============================================================
 // NAVEGACIÓN ENTRE PANTALLAS
@@ -139,18 +193,19 @@ async function leerFrames() {
                 iniciarSesion();
 
             } else if (resultado === false) {
-                mensajeScanner.textContent = "Código inválido. Intentá de nuevo.";
+                mensajeScanner.textContent = "Este código ya fue usado";
                 codigoActual = null;
                 setTimeout(() => {
-                    mensajeScanner.textContent = "Apuntá la cámara al código QR";
+                    mensajeScanner.textContent = "Escanea tu Qr";
                     requestAnimationFrame(leerFrames);
                 }, 2000);
 
             } else {
                 // null = error de red
                 codigoActual = null;
+                mensajeScanner.textContent = "No se pudo conectar, intenta de nuevo";
                 setTimeout(() => {
-                    mensajeScanner.textContent = "Apuntá la cámara al código QR";
+                    mensajeScanner.textContent = "Escanea otro código";
                     requestAnimationFrame(leerFrames);
                 }, 3000);
             }
@@ -225,35 +280,36 @@ function conectarBridge() {
 
 // -- Enviar preset al bridge --
 //
-// Ahora el payload incluye layer y ruta OSC además del código,
-// para que el bridge sepa exactamente qué clip activar en Resolume.
+// enviarPresetDirecto() manda cualquier clave de preset tal cual
+// (se usa para el idle y los clear, que no viven en PRESETS).
+// enviarPreset() arma la clave a partir de PRESETS[layer][idx].id
+// y delega en enviarPresetDirecto().
 
-function enviarPreset(layer, idx) {
-    const clip     = OSC_MAP[layer][idx];
-    const numLayer = OSC_LAYER[layer];
-    const rutaOSC  = `/layer/${numLayer}/clip/${clip}/connect`;
-
+function enviarPresetDirecto(clavePreset) {
     const mensaje = JSON.stringify({
-        preset:  clip,
-        layer:   numLayer,
-        osc:     rutaOSC,
-        code:    codigoActual,
+        preset: clavePreset,
+        code:   codigoActual,
     });
 
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(mensaje);
         console.log("Preset enviado:", mensaje);
     } else {
-        // Bridge no conectado — funciona igual durante desarrollo
-        console.warn("Bridge no conectado — preset no enviado:", rutaOSC);
+        console.warn("Bridge no conectado — preset no enviado:", clavePreset);
     }
+}
+
+function enviarPreset(layer, idx) {
+    const clavePreset = PRESETS[layer][idx].id;
+    enviarPresetDirecto(clavePreset);
 }
 
 // ============================================================
 // PARTE 4: LÓGICA DE SELECCIÓN DE LAYERS
 //
 // Cada layer es independiente: el usuario elige uno por fila.
-// Tap en el mismo botón lo deselecciona.
+// Tap en el mismo botón lo deselecciona y apaga la capa en Resolume
+// (clear) — excepto en "visual", que siempre debe quedar con uno activo.
 // La activación es inmediata — sin botón de confirmar.
 // ============================================================
 
@@ -267,10 +323,13 @@ function manejarBoton(btn) {
         b.classList.remove(clase);
     });
 
-    // Toggle: si ya estaba seleccionado, deseleccionar sin enviar OSC
-    if (estado[layer] === idx) {
+    // Toggle: si ya estaba seleccionado, deseleccionar Y avisarle a
+    // Resolume que apague la capa (clear). El layer "visual" queda
+    // afuera de esta regla — siempre debe quedar uno activo.
+    if (layer !== "visual" && estado[layer] === idx) {
         estado[layer] = null;
         actualizarStatus(layer, null);
+        enviarPresetDirecto(CLAVES_CLEAR[layer]);
         return;
     }
 
@@ -288,11 +347,10 @@ function actualizarStatus(layer, idx) {
         el.textContent = "SIN SELECCIÓN";
         el.classList.remove("activo");
     } else {
-        el.textContent = "● " + ETIQUETAS[layer][idx];
+        el.textContent = "● " + PRESETS[layer][idx].label;
         el.classList.add("activo");
     }
 }
-
 
 // ============================================================
 // SESIÓN CON TEMPORIZADOR
@@ -311,6 +369,9 @@ function iniciarSesion() {
         clearInterval(temporizadorSesion);
     }
 
+    // Visual por defecto al desbloquear — siempre la primera del array
+    seleccionarVisualPorDefecto();
+
     // Dispara cada 1 segundo
     temporizadorSesion = setInterval(() => {
         segundosRestantes -= 1;
@@ -320,6 +381,19 @@ function iniciarSesion() {
             finalizarSesion();
         }
     }, 1000);
+}
+
+function seleccionarVisualPorDefecto() {
+    const idxDefault = 0;
+
+    estado.visual = idxDefault;
+    actualizarStatus("visual", idxDefault);
+    enviarPreset("visual", idxDefault);
+
+    const boton = document.querySelector(`[data-layer="visual"][data-idx="${idxDefault}"]`);
+    if (boton) {
+        boton.classList.add("sel-visual");
+    }
 }
 
 function actualizarBarraTiempo() {
@@ -341,6 +415,14 @@ function finalizarSesion() {
     clearInterval(temporizadorSesion);
     temporizadorSesion = null;
 
+    // Visual idle — directo, sin pasar por PRESETS ni por estado,
+    // porque no es un preset seleccionable desde la UI.
+    enviarPresetDirecto(PRESET_IDLE);
+
+    // Apagar efectos y color — deja solo el visual (idle) activo.
+    enviarPresetDirecto(CLAVES_CLEAR.effects);
+    enviarPresetDirecto(CLAVES_CLEAR.color);
+
     // Limpiar toda la selección de los 3 layers
     estado.visual  = null;
     estado.effects = null;
@@ -352,11 +434,20 @@ function finalizarSesion() {
 
     ["visual", "effects", "color"].forEach(l => actualizarStatus(l, null));
 
-    // Limpiar el código validado y volver al scanner
+    // Limpiar el código validado
     codigoActual = null;
-    mensajeScanner.textContent = "Apuntá la cámara al código QR";
-    mostrarPantalla("scanner");
-    requestAnimationFrame(leerFrames);
+
+    // Mostrar "Gracias por interactuar" unos instantes antes de volver
+    // al scanner — como un setTimeout que hace de pausa entre pantallas,
+    // igual que un sleep() no bloqueante en C (el resto del programa
+    // sigue corriendo mientras espera).
+    mostrarPantalla("despedida");
+
+    setTimeout(() => {
+        mensajeScanner.textContent = "Escanea tu Qr";
+        mostrarPantalla("scanner");
+        requestAnimationFrame(leerFrames);
+    }, DURACION_DESPEDIDA * 1000);
 }
 
 // ============================================================
@@ -365,20 +456,38 @@ function finalizarSesion() {
 
 function registrarBotones() {
     // Botones de preset — los 3 layers
+    // (se llama DESPUÉS de renderizarBotones(), una vez que existen en el DOM)
     document.querySelectorAll(".btn-preset").forEach(btn => {
         btn.addEventListener("click", () => manejarBoton(btn));
     });
 
     // Botón de reinicio en pantalla de confirmación
-document.getElementById("btn-reiniciar").addEventListener("click", () => {
-    finalizarSesion();
-});
+    document.getElementById("btn-reiniciar").addEventListener("click", () => {
+        finalizarSesion();
+    });
 }
 
 // ============================================================
 // PUNTO DE ENTRADA
+//
+// Antes: registrarBotones() se llamaba directo, porque los botones
+// ya existían escritos en el HTML.
+// Ahora: hay que esperar a que config.json cargue y los botones se
+// generen ANTES de poder registrar sus eventos de click. Por eso
+// todo el arranque queda encadenado dentro de esta función async.
 // ============================================================
 
-registrarBotones();
-conectarBridge();
-iniciarCamara();
+async function iniciar() {
+    const cargoOk = await cargarPresets();
+
+    if (!cargoOk) {
+        return; // sin presets no tiene sentido seguir — ya se muestra el error en pantalla
+    }
+
+    renderizarBotones();
+    registrarBotones();
+    conectarBridge();
+    iniciarCamara();
+}
+
+iniciar();

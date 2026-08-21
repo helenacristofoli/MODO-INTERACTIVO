@@ -4,8 +4,9 @@ import threading
 import json
 import os
 from datetime import datetime
-from generator import generar_codigo, generar_qr
+from generator import emitir_ticket as generar_ticket_completo
 from server import iniciar_servidor
+from cleanup_codes import limpiar_codigos
 
 # ── Configuración ──────────────────────────────────────────
 RUTA_CODIGOS = "codes/codes.json"
@@ -34,28 +35,35 @@ def contar_tickets_hoy():
 
 def emitir_ticket():
     """
-    Genera el código UUID, crea el QR e imprime.
+    Genera el ticket completo (QR + logo + instrucciones) e imprime
+    si la impresora está disponible; si no, queda emitido en digital.
     Esta función se llama cuando el cajero presiona el botón.
     """
     try:
-        # Genera el código y el QR
-        codigo = generar_codigo()
-        ruta_qr = generar_qr(codigo)
-        
+        # Genera el ticket completo -- imprime físico si puede, si no queda en digital
+        codigo, impreso_fisico = generar_ticket_completo()
+
         # Actualiza la interfaz con el nuevo código
         lbl_codigo.config(text=f"{codigo[:35]}...")
-        
+
         expiracion = datetime.now().strftime("%Y-%m-%d") + " (mañana)"
         lbl_expira.config(text=f"Expira: {expiracion}")
-        
+
         # Actualiza el contador de tickets
         lbl_contador.config(text=f"tickets hoy: {contar_tickets_hoy()}")
-        
+
+        estado_ticket = (
+            "Ticket impreso en papel."
+            if impreso_fisico
+            else "Ticket emitido en digital (impresora no disponible) — "
+                 "mostrale el QR al cliente desde la pantalla."
+        )
+
         messagebox.showinfo(
             "Ticket generado",
-            f"QR generado exitosamente.\nCódigo: {codigo[:20]}...\nArchivo: {ruta_qr}"
+            f"{estado_ticket}\nCódigo: {codigo[:20]}...\nArchivo: codes/{codigo}.png"
         )
-    
+
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo generar el ticket:\n{e}")
 
@@ -168,8 +176,9 @@ def construir_ui(ventana):
 # ── Main ────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    limpiar_codigos()          # limpia canjeados/vencidos antes de exponer el servidor
     iniciar_servidor_hilo()
-    
+
     ventana = tk.Tk()
     construir_ui(ventana)
     ventana.mainloop()

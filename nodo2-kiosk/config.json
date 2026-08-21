@@ -1,0 +1,58 @@
+{
+  "visual": [
+    {
+      "id": "visual_1",
+      "label": "PRUEBA CURL",
+      "thumbnail": "assets/thumbnails/visual_1.png"
+    },
+    {
+      "id": "visual_2",
+      "label": "PRESET 2",
+      "thumbnail": "assets/thumbnails/visual_2.png"
+    },
+    {
+      "id": "visual_3",
+      "label": "PRESET 3",
+      "thumbnail": "assets/thumbnails/visual_3.png"
+    },
+    {
+      "id": "visual_4",
+      "label": "PRESET 4",
+      "thumbnail": "assets/thumbnails/visual_4.png"
+    }
+  ],
+  "effects": [
+    {
+      "id": "efecto_1",
+      "label": "EFECTO 1",
+      "thumbnail": "assets/thumbnails/efecto_1.png"
+    },
+    {
+      "id": "efecto_2",
+      "label": "EFECTO 2",
+      "thumbnail": "assets/thumbnails/efecto_2.png"
+    },
+    {
+      "id": "efecto_3",
+      "label": "EFECTO 3",
+      "thumbnail": "assets/thumbnails/efecto_3.png"
+    },
+    {
+      "id": "efecto_4",
+      "label": "EFECTO 4",
+      "thumbnail": "assets/thumbnails/efecto_4.png"
+    }
+  ],
+  "color": [
+    {
+      "id": "color_1",
+      "label": "COLOR 1",
+      "thumbnail": "assets/thumbnails/color_1.png"
+    },
+    {
+      "id": "color_2",
+      "label": "COLOR 2",
+      "thumbnail": "assets/thumbnails/color_2.png"
+    }
+  ]
+}

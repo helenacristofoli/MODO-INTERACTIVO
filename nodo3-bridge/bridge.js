@@ -30,21 +30,35 @@ udpPort.on("error", (err) => {
 });
 
 // ─── Función: enviar mensaje OSC a Resolume ──────────────────────────────────
-// Recibe el número de preset (ej: 3) y envía el mensaje OSC correspondiente.
-// Equivalente en C a: llenar un struct con la ruta y el valor, y llamar sendto()
-function enviarOSC(numeroPreset) {
-    // Busca la ruta OSC en config.json según el número de preset
-    const ruta = config.presets[String(numeroPreset)];
+//
+// Recibe una clave de preset (ej: "visual_2", "efecto_3", "efecto_clear")
+// y envía el mensaje OSC correspondiente a Resolume.
+//
+// Las rutas que terminan en "/clear" son un caso especial: Resolume tiene
+// un bug conocido (Arena 7) donde el botón de clear se queda "atascado"
+// si solo se manda el valor 1. El fix es simular click + release: mandar
+// 1 y después 0 con un pequeño delay — como debounce de un botón físico.
+
+function enviarOSC(clavePreset) {
+    // Busca la ruta OSC en config.json usando la clave recibida
+    const ruta = config.presets[clavePreset];
 
     if (!ruta) {
-        // Si el preset no existe en config.json, lo ignoramos
-        console.warn(`[OSC] Preset "${numeroPreset}" no definido en config.json`);
+        console.warn(`[OSC] Preset "${clavePreset}" no definido en config.json`);
         return;
     }
 
-    // Construye y envía el paquete OSC
-    // address: la ruta OSC (ej: "/composition/clips/3/connect")
-    // args: argumento entero con valor 1 — Resolume lo interpreta como "activar"
+    if (ruta.endsWith("/clear")) {
+        udpPort.send({ address: ruta, args: [{ type: "i", value: 1 }] });
+
+        setTimeout(() => {
+            udpPort.send({ address: ruta, args: [{ type: "i", value: 0 }] });
+        }, 50);
+
+        console.log(`[OSC] Clear enviado → ${ruta}`);
+        return;
+    }
+
     udpPort.send({
         address: ruta,
         args: [{ type: "i", value: 1 }]

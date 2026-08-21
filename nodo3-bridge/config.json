@@ -7,9 +7,20 @@
     "port": 7000
   },
   "presets": {
-    "1": "/composition/layers/1/clips/1/connect",
-    "2": "/composition/layers/1/clips/2/connect",
-    "3": "/composition/layers/1/clips/3/connect",
-    "4": "/composition/layers/1/clips/4/connect"
+    "visual_1":  "/composition/layers/3/clips/1/connect",
+    "visual_2":  "/composition/layers/3/clips/5/connect",
+    "visual_3":  "/composition/layers/3/clips/9/connect",
+    "visual_4":  "/composition/layers/3/clips/17/connect",
+    "visual_idle": "/composition/layers/3/clips/19/connect",
+
+    "efecto_1":  "/composition/layers/5/clips/6/connect",
+    "efecto_2":  "/composition/layers/5/clips/8/connect",
+    "efecto_3":  "/composition/layers/5/clips/10/connect",
+    "efecto_4":  "/composition/layers/5/clips/12/connect",
+    "efecto_clear": "/composition/layers/5/clear",
+
+    "color_1":   "/composition/layers/6/clips/6/connect",
+    "color_2":   "/composition/layers/6/clips/8/connect",
+    "color_clear": "/composition/layers/6/clear"
   }
 }

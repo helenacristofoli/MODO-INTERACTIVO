@@ -11,3 +11,22 @@ nodo1-caja/.venv/
 # Certificados locales
 nodo3-bridge/*.pem
 nodo2-kiosk/*.pem
+
+# Nodo 1 - Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Nodo 3 - Node
+node_modules/
+
+# Certificados locales (específicos de subnet)
+*.pem
+*.key
+*.crt
+
+
+# Datos generados en runtime (no versionar)
+nodo1-caja/codes/*.png
+nodo1-caja/codes/backups/

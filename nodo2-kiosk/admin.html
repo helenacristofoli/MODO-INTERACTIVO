@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoDo Interactivo — Administración</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+
+        :root {
+            --bg:          #0A0A0A;
+            --panel:       #151515;
+            --panel-line:  #2A2A2A;
+            --texto:       #F2F2F2;
+            --texto-tenue: #8A8A8A;
+            --input-bg:    #1D1D1D;
+            --ok:          #C9C9C9;
+            --error:       #D9534F;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--texto);
+            font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+            padding: 32px 20px 80px;
+        }
+
+        header {
+            max-width: 900px;
+            margin: 0 auto 40px;
+        }
+
+        .logo-admin {
+            display: block;
+            max-width: 520px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 16px;
+        }
+
+        header h1 {
+            font-family: "Space Grotesk", -apple-system, "Segoe UI", Roboto, sans-serif;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            margin: 0 0 8px;
+        }
+
+        header p.header-desc {
+            color: var(--texto-tenue);
+            font-size: 14px;
+            margin: 0 0 20px;
+        }
+
+        .instrucciones {
+            background: var(--panel);
+            border: 1px solid var(--panel-line);
+            border-radius: 6px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: var(--texto-tenue);
+        }
+
+        .instrucciones p {
+            margin: 0 0 8px;
+            color: var(--texto);
+        }
+
+        .instrucciones ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .instrucciones li {
+            margin-bottom: 4px;
+            line-height: 1.5;
+        }
+
+        .instrucciones strong {
+            color: var(--texto);
+        }
+
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .layer-seccion h2 {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--texto-tenue);
+            border-bottom: 1px solid var(--panel-line);
+            padding-bottom: 10px;
+            margin: 0 0 16px;
+        }
+
+        .preset-card {
+            display: grid;
+            grid-template-columns: 96px 1fr auto;
+            gap: 16px;
+            align-items: center;
+            background: var(--panel);
+            border: 1px solid var(--panel-line);
+            border-radius: 6px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .preset-thumb {
+            width: 96px;
+            height: 64px;
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            background-size: cover;
+            background-position: center;
+            border: 1px solid var(--panel-line);
+        }
+
+        .preset-campos {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .preset-id {
+            font-size: 11px;
+            color: var(--texto-tenue);
+            font-family: ui-monospace, "Courier New", monospace;
+        }
+
+        .preset-campos input[type="text"] {
+            background: var(--input-bg);
+            border: 1px solid var(--panel-line);
+            color: var(--texto);
+            font-size: 14px;
+            padding: 8px 10px;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .preset-campos input[type="text"]:focus {
+            outline: none;
+            border-color: var(--texto-tenue);
+        }
+
+        .preset-campos input[type="file"] {
+            font-size: 12px;
+            color: var(--texto-tenue);
+            max-width: 100%;
+        }
+
+        .preset-acciones {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            min-width: 96px;
+        }
+
+        .btn-guardar {
+            background: var(--texto);
+            color: #0A0A0A;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-guardar:hover {
+            background: var(--ok);
+        }
+
+        .btn-guardar:disabled {
+            background: var(--panel-line);
+            color: var(--texto-tenue);
+            cursor: default;
+        }
+
+        .preset-status {
+            font-size: 12px;
+            min-height: 14px;
+        }
+
+        .preset-status.ok    { color: #9BD48A; }
+        .preset-status.error { color: var(--error); }
+
+        @media (max-width: 560px) {
+            .preset-card {
+                grid-template-columns: 72px 1fr;
+            }
+            .preset-acciones {
+                grid-column: 1 / -1;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                min-width: 0;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <img class="logo-admin" src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
+        <h1>Administración</h1>
+        <p class="header-desc">Editá el texto y la imagen de cada preset. Los cambios se reflejan en el kiosk al recargar la pantalla.</p>
+
+        <div class="instrucciones">
+            <p><strong>Antes de subir una imagen:</strong></p>
+            <ul>
+                <li>Formato: <strong>.png</strong> o <strong>.jpg</strong></li>
+                <li>Dimensiones recomendadas: <strong>600 × 204 px</strong> (o cualquier tamaño con esa misma proporción, aprox. 3:1 ancho-alto)</li>
+                <li>Peso máximo: <strong>5 MB</strong></li>
+                <li>No hace falta renombrar el archivo — al guardar, el sistema lo nombra automáticamente</li>
+            </ul>
+        </div>
+    </header>
+
+    <main id="contenedor-layers">
+        <!-- Las secciones (visual / effects / color) se generan por JS -->
+    </main>
+
+    <script>
+
+        const NOMBRES_LAYER = {
+            visual:  "Layer 01 — Visuales",
+            effects: "Layer 02 — Efectos",
+            color:   "Layer 03 — Color",
+        };
+
+        let PRESETS = {};
+
+        async function cargarPresets() {
+            const respuesta = await fetch("config.json");
+            PRESETS = await respuesta.json();
+            renderizarPantalla();
+        }
+
+        function renderizarPantalla() {
+            const contenedor = document.getElementById("contenedor-layers");
+            contenedor.innerHTML = "";
+
+            for (const layer in NOMBRES_LAYER) {
+                const seccion = document.createElement("section");
+                seccion.className = "layer-seccion";
+
+                const titulo = document.createElement("h2");
+                titulo.textContent = NOMBRES_LAYER[layer];
+                seccion.appendChild(titulo);
+
+                PRESETS[layer].forEach((preset, idx) => {
+                    seccion.appendChild(crearTarjetaPreset(layer, idx, preset));
+                });
+
+                contenedor.appendChild(seccion);
+            }
+        }
+
+        function crearTarjetaPreset(layer, idx, preset) {
+            const tarjeta = document.createElement("div");
+            tarjeta.className = "preset-card";
+
+            const thumb = document.createElement("div");
+            thumb.className = "preset-thumb";
+            thumb.style.backgroundImage = `url('${preset.thumbnail}')`;
+
+            const campos = document.createElement("div");
+            campos.className = "preset-campos";
+
+            const idLabel = document.createElement("span");
+            idLabel.className = "preset-id";
+            idLabel.textContent = preset.id;
+
+            const inputLabel = document.createElement("input");
+            inputLabel.type = "text";
+            inputLabel.value = preset.label;
+
+            const inputArchivo = document.createElement("input");
+            inputArchivo.type = "file";
+            inputArchivo.accept = ".png,.jpg,.jpeg";
+
+            // Vista previa inmediata al elegir una imagen nueva,
+            // antes de guardar — solo visual, no toca el archivo real.
+            inputArchivo.addEventListener("change", () => {
+                if (inputArchivo.files[0]) {
+                    thumb.style.backgroundImage = `url('${URL.createObjectURL(inputArchivo.files[0])}')`;
+                }
+            });
+
+            campos.appendChild(idLabel);
+            campos.appendChild(inputLabel);
+            campos.appendChild(inputArchivo);
+
+            const acciones = document.createElement("div");
+            acciones.className = "preset-acciones";
+
+            const boton = document.createElement("button");
+            boton.className = "btn-guardar";
+            boton.textContent = "Guardar";
+
+            const status = document.createElement("span");
+            status.className = "preset-status";
+
+            boton.addEventListener("click", () => {
+                guardarPreset(layer, idx, inputLabel.value, inputArchivo.files[0], boton, status);
+            });
+
+            acciones.appendChild(boton);
+            acciones.appendChild(status);
+
+            tarjeta.appendChild(thumb);
+            tarjeta.appendChild(campos);
+            tarjeta.appendChild(acciones);
+
+            return tarjeta;
+        }
+
+        async function guardarPreset(layer, idx, label, archivo, boton, status) {
+            boton.disabled = true;
+            status.textContent = "Guardando...";
+            status.className = "preset-status";
+
+            const formData = new FormData();
+            formData.append("layer", layer);
+            formData.append("idx", idx);
+            formData.append("label", label);
+            if (archivo) {
+                formData.append("thumbnail", archivo);
+            }
+
+            try {
+                const respuesta = await fetch("/admin/actualizar-preset", {
+                    method: "POST",
+                    body: formData,
+                });
+                const resultado = await respuesta.json();
+
+                if (resultado.ok) {
+                    status.textContent = "Guardado ✓";
+                    status.className = "preset-status ok";
+                } else {
+                    status.textContent = resultado.error || "Error al guardar";
+                    status.className = "preset-status error";
+                }
+
+            } catch (error) {
+                console.error("Error de red al guardar:", error);
+                status.textContent = "Error de conexión";
+                status.className = "preset-status error";
+            } finally {
+                boton.disabled = false;
+            }
+        }
+
+        cargarPresets();
+
+    </script>
+
+</body>
+</html>

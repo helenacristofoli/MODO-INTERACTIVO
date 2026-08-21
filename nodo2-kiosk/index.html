@@ -4,24 +4,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>MoDo Interactivo — Kiosk</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <!-- PANTALLA 1: Escáner QR -->
-    <div id="pantalla-scanner" class="pantalla activa">
+<!-- PANTALLA 1: Escáner QR -->
+<div id="pantalla-scanner" class="pantalla activa">
 
-        <div class="logo-kiosk">
-            <img src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
-        </div>
+    <div class="logo-kiosk">
+        <img src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
+    </div>
 
+    <div class="panel-acento panel-scanner">
         <video id="camara" playsinline></video>
         <canvas id="canvas" hidden></canvas>
-
-        <p id="mensaje-scanner">Apunta la cámara al código QR</p>
+        <p id="mensaje-scanner">Escanea tu QR</p>
     </div>
+
+</div>
 
     <!-- PANTALLA 2: Selección de visuales -->
     <div id="pantalla-menu" class="pantalla">
@@ -30,102 +33,55 @@
             <img src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
         </div>
 
-        <div class="menu-tagline">
-            <span class="tag-izq">WE ARE 26</span>
+        <div class="panel-acento">
+
             <h1>ELIGE TU VISUAL</h1>
-            <span class="tag-der">FIFA 2026</span>
-        </div>
 
-        <!-- BARRA DE TIEMPO DE SESIÓN -->
-        <div id="barra-tiempo">
-            <div id="progreso-tiempo"></div>
-            <span id="contador-tiempo">60</span>
-        </div>
+            <!-- BARRA DE TIEMPO DE SESIÓN -->
+            <div id="barra-tiempo">
+                <div id="progreso-tiempo"></div>
+                <span id="contador-tiempo">60</span>
+            </div>
 
-        <!-- LAYER 1: Visuales -->
-        <div class="layer-block">
-            <div class="layer-header">
-                <span class="layer-num">LAYER 01</span>
-                <span class="layer-name layer-gold">VISUALES</span>
-                <div class="layer-divider"></div>
-                <span class="layer-status" id="status-visual">SIN SELECCIÓN</span>
-            </div>
-            <div class="btn-row row-4">
-                <button class="btn-preset" data-layer="visual" data-idx="0">
-                    <span class="btn-num">V01</span>
-                    <span class="btn-label">ESTADIO</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="visual" data-idx="1">
-                    <span class="btn-num">V02</span>
-                    <span class="btn-label">CAMPO</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="visual" data-idx="2">
-                    <span class="btn-num">V03</span>
-                    <span class="btn-label">TROFEO</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="visual" data-idx="3">
-                    <span class="btn-num">V04</span>
-                    <span class="btn-label">MULTITUD</span>
-                    <div class="btn-dot"></div>
-                </button>
-            </div>
-        </div>
+             <!-- LAYER 1: Visuales -->
+            <div class="layer-block">
+                <div class="layer-header">
+                    <span class="layer-num">LAYER 01</span>
+                    <span class="layer-name layer-gold">VISUALES</span>
+                    <div class="layer-divider"></div>
+                    <span class="layer-status" id="status-visual">SIN SELECCIÓN</span>
+                </div>
 
-        <!-- LAYER 2: Efectos -->
-        <div class="layer-block">
-            <div class="layer-header">
-                <span class="layer-num">LAYER 02</span>
-                <span class="layer-name layer-green">EFECTOS</span>
-                <div class="layer-divider"></div>
-                <span class="layer-status" id="status-effects">SIN SELECCIÓN</span>
+                <!-- Botones generados dinámicamente por app.js desde config.json -->
+                <div class="btn-row row-4" id="row-visual"></div>
             </div>
-            <div class="btn-row row-4">
-                <button class="btn-preset" data-layer="effects" data-idx="0">
-                    <span class="btn-num">E01</span>
-                    <span class="btn-label">GLITCH</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="effects" data-idx="1">
-                    <span class="btn-num">E02</span>
-                    <span class="btn-label">STROBE</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="effects" data-idx="2">
-                    <span class="btn-num">E03</span>
-                    <span class="btn-label">BLUR</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="effects" data-idx="3">
-                    <span class="btn-num">E04</span>
-                    <span class="btn-label">MIRROR</span>
-                    <div class="btn-dot"></div>
-                </button>
-            </div>
-        </div>
 
-        <!-- LAYER 3: Color -->
-        <div class="layer-block">
-            <div class="layer-header">
-                <span class="layer-num">LAYER 03</span>
-                <span class="layer-name layer-grey">COLOR</span>
-                <div class="layer-divider"></div>
-                <span class="layer-status" id="status-color">SIN SELECCIÓN</span>
+            <!-- LAYER 2: Efectos -->
+            <div class="layer-block">
+                <div class="layer-header">
+                    <span class="layer-num">LAYER 02</span>
+                    <span class="layer-name layer-green">EFECTOS</span>
+                    <div class="layer-divider"></div>
+                    <span class="layer-status" id="status-effects">SIN SELECCIÓN</span>
+                </div>
+
+                <!-- Botones generados dinámicamente por app.js desde config.json -->
+                <div class="btn-row row-4" id="row-effects"></div>
             </div>
-            <div class="btn-row row-2">
-                <button class="btn-preset" data-layer="color" data-idx="0">
-                    <span class="btn-num">C01</span>
-                    <span class="btn-label">DORADO</span>
-                    <div class="btn-dot"></div>
-                </button>
-                <button class="btn-preset" data-layer="color" data-idx="1">
-                    <span class="btn-num">C02</span>
-                    <span class="btn-label">VERDE</span>
-                    <div class="btn-dot"></div>
-                </button>
+
+            <!-- LAYER 3: Color -->
+            <div class="layer-block">
+                <div class="layer-header">
+                    <span class="layer-num">LAYER 03</span>
+                    <span class="layer-name layer-grey">COLOR</span>
+                    <div class="layer-divider"></div>
+                    <span class="layer-status" id="status-color">SIN SELECCIÓN</span>
+                </div>
+
+                <!-- Botones generados dinámicamente por app.js desde config.json -->
+                <div class="btn-row row-2" id="row-color"></div>
             </div>
+
         </div>
 
     </div>
@@ -141,6 +97,16 @@
         <p id="mensaje-confirmacion">Tu visual está activándose en la pantalla.</p>
 
         <button id="btn-reiniciar">Escanear otro ticket</button>
+    </div>
+
+    <!-- PANTALLA 4: Despedida — aparece unos instantes al terminar la sesión, antes de volver al scanner -->
+    <div id="pantalla-despedida" class="pantalla">
+
+        <div class="logo-kiosk">
+            <img src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
+        </div>
+
+        <h1>¡Gracias por interactuar con MODO!</h1>
     </div>
 
     <script src="libs/jsqr.js"></script>
