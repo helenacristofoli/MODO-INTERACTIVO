@@ -21,6 +21,14 @@
     <div class="panel-acento panel-scanner">
         <video id="camara" playsinline></video>
         <canvas id="canvas" hidden></canvas>
+
+        <!-- Canvas dedicado a la cámara en vivo (Parte 5 de app.js).
+             Vive acá junto al otro canvas técnico aunque se usa en la
+             pantalla de menú — los dos son elementos ocultos que solo
+             existen para que JS pueda dibujar frames de video, no se
+             ven nunca en pantalla. -->
+        <canvas id="canvas-camara" hidden></canvas>
+
         <p id="mensaje-scanner">Escanea tu QR</p>
     </div>
 
@@ -28,6 +36,14 @@
 
     <!-- PANTALLA 2: Selección de visuales -->
     <div id="pantalla-menu" class="pantalla">
+
+        <!-- Preview de la cámara en vivo -- oculto por defecto (ver
+             .camara-preview-wrap en style.css), app.js le agrega/saca
+             la clase "visible" al activar/desactivar la cámara. -->
+        <div class="camara-preview-wrap" id="camara-preview-wrap">
+            <video id="camara-preview" playsinline muted autoplay></video>
+            <span class="camara-preview-etiqueta">EN VIVO</span>
+        </div>
 
         <div class="logo-kiosk">
             <img src="assets/MODO_Interactivo_Logo.png" alt="MoDo Interactivo">
@@ -81,6 +97,16 @@
                 <!-- Botones generados dinámicamente por app.js desde config.json -->
                 <div class="btn-row row-2" id="row-color"></div>
             </div>
+
+            <!-- CÁMARA EN VIVO — no es un layer-block más: funcionalmente es
+                 un 5° visual (mismo clip family que Layer 01 en Resolume),
+                 pero en la UI queda fuera del grid, como botón único y
+                 alargado al final de todo. La lógica de toggle y el
+                 apagado mutuo con los visuales normales vive en app.js
+                 (activarCamaraViva / desactivarCamaraViva). -->
+            <button id="btn-camara-viva" class="btn-camara-viva">
+                <span class="btn-camara-label">CAMARA EN VIVO</span>
+            </button>
 
         </div>
 

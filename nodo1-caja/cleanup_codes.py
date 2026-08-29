@@ -19,15 +19,13 @@ Uso manual (para probar sin tocar main.py):
     python cleanup_codes.py
 """
 
-import json
 import os
 import shutil
 from datetime import datetime, timedelta
 
+import codes_store
+
 # ---------- Configuración ----------
-# Mismas rutas relativas que usa generator.py (relativas a la carpeta
-# desde donde se ejecuta main.py, no a la ubicación de este archivo).
-CODES_PATH = "codes/codes.json"
 CARPETA_CODIGOS = "codes"          # ahí viven codes.json Y los .png (codes/<uuid>.png)
 BACKUP_DIR = "codes/backups"
 DIAS_EXPIRACION = 30
@@ -36,26 +34,18 @@ FORMATO_FECHA = "%Y-%m-%d %H:%M:%S"
 # ------------------------------------
 
 
-def cargar_codigos(path):
-    """Lee codes.json. Si no existe o está vacío, devuelve dict vacío."""
-    if not os.path.exists(path):
-        print(f"[AVISO] No existe {path}, nada que limpiar.")
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        contenido = f.read().strip()
-        if not contenido:
-            return {}
-        return json.loads(contenido)
-
-
-def hacer_backup(path):
-    """Copia el archivo actual a codes/backups/codes_YYYYMMDD_HHMMSS.json"""
-    if not os.path.exists(path):
+def hacer_backup():
+    """
+    Copia el archivo actual a codes/backups/codes_YYYYMMDD_HHMMSS.json.
+    Es una copia directa del archivo en disco (no pasa por codes_store)
+    porque acá solo necesitamos un snapshot tal cual está, no leer/parsear.
+    """
+    if not os.path.exists(codes_store.RUTA_CODIGOS):
         return None
     os.makedirs(BACKUP_DIR, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = os.path.join(BACKUP_DIR, f"codes_{timestamp}.json")
-    shutil.copy2(path, backup_path)
+    shutil.copy2(codes_store.RUTA_CODIGOS, backup_path)
     return backup_path
 
 
@@ -130,14 +120,19 @@ def limpiar_codigos():
     """
     print(f"--- Limpieza de codes.json | {datetime.now().isoformat()} ---")
 
-    codigos = cargar_codigos(CODES_PATH)
+    # Antes: cargar_codigos(CODES_PATH) local, con open()/json.load() directo.
+    # Ahora: codes_store.leer_codigos() -- mismo lock que usan generator.py
+    # y server.py, así esta lectura tampoco puede pisarse con una escritura
+    # concurrente (aunque en la práctica esto corre una sola vez, antes de
+    # que arranque el hilo del servidor -- pero mejor no depender de eso).
+    codigos = codes_store.leer_codigos()
     total_antes = len(codigos)
 
     if total_antes == 0:
         print("No hay códigos registrados. Nada que hacer.")
         return
 
-    backup_path = hacer_backup(CODES_PATH)
+    backup_path = hacer_backup()
     if backup_path:
         print(f"Backup creado: {backup_path}")
 
@@ -155,8 +150,10 @@ def limpiar_codigos():
     total_despues = len(codigos_filtrados)
     eliminados = total_antes - total_despues
 
-    with open(CODES_PATH, "w", encoding="utf-8") as f:
-        json.dump(codigos_filtrados, f, indent=2, ensure_ascii=False)
+    # Antes: open(..., "w") + json.dump() directo.
+    # Ahora: codes_store.escribir_codigos() -- escritura atómica (archivo
+    # temporal + os.replace()), igual que el resto del sistema.
+    codes_store.escribir_codigos(codigos_filtrados)
 
     backups_borrados = limpiar_backups_viejos()
 

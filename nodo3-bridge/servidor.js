@@ -11,6 +11,13 @@ const fs          = require("fs");
 const path        = require("path");
 const { default: formidable } = require("formidable"); // v3 expone la función bajo "default"
 
+// config.json ACÁ es el del bridge (el mismo que lee bridge.js, vive al
+// lado de este archivo en C:\bridge) -- lo usamos solo para sacar
+// config.red.ip_bridge y armar la ruta del certificado. NO confundir
+// con RUTA_CONFIG más abajo, que apunta al config.json de la TABLET
+// (los presets de botones que edita el panel de admin).
+const config = require("./config.json");
+
 // ─── Configuración ───────────────────────────────────────────────────────────
 // Cambia esta ruta a la carpeta donde tienes index.html, app.js y style.css
 const CARPETA_TABLET   = "C:\\Users\\helen\\Documents\\MODO_Kiosk";
@@ -27,9 +34,15 @@ const LAYERS_VALIDOS = ["visual", "effects", "color"];
 const EXTENSIONES_VALIDAS = [".png", ".jpg", ".jpeg"];
 
 // ─── Certificado SSL ─────────────────────────────────────────────────────────
+// La IP ya no está escrita a mano acá -- sale de config.red.ip_bridge,
+// el mismo valor único que usa bridge.js. Cambiar de red (ej. al venue)
+// es una sola edición en config.json, y los dos procesos quedan
+// consistentes automáticamente.
+const ipBridge = config.red.ip_bridge;
+
 const opciones = {
-    cert: fs.readFileSync("C:\\bridge\\192.168.100.6.pem"),
-    key:  fs.readFileSync("C:\\bridge\\192.168.100.6-key.pem"),
+    cert: fs.readFileSync(`C:\\bridge\\${ipBridge}.pem`),
+    key:  fs.readFileSync(`C:\\bridge\\${ipBridge}-key.pem`),
 };
 
 // ─── Mapa de tipos de archivo (para servir archivos estáticos) ───────────────
@@ -43,7 +56,7 @@ const tiposMIME = {
 };
 
 // ============================================================
-// UTILIDADES DE CONFIG.JSON
+// UTILIDADES DE CONFIG.JSON (el de la TABLET, no el del bridge)
 //
 // Leer y escribir son operaciones separadas y explícitas —
 // como fopen/fread/fclose y fopen/fwrite/fclose en C. Nunca
@@ -95,14 +108,14 @@ function manejarActualizarPreset(req, res) {
                 return;
             }
 
-            const config = leerConfig();
+            const configTablet = leerConfig();
 
-            if (!config[layer] || !config[layer][idx]) {
+            if (!configTablet[layer] || !configTablet[layer][idx]) {
                 responderJSON(res, 400, { ok: false, error: `Preset no encontrado: ${layer}[${idx}]` });
                 return;
             }
 
-            const preset = config[layer][idx];
+            const preset = configTablet[layer][idx];
 
             // ── Actualizar label (siempre, si vino) ───────────────
             if (label && label.trim() !== "") {
@@ -131,7 +144,7 @@ function manejarActualizarPreset(req, res) {
                 preset.thumbnail = `assets/thumbnails/${nombreArchivo}`;
             }
 
-            escribirConfig(config);
+            escribirConfig(configTablet);
 
             console.log(`[ADMIN] Preset actualizado: ${layer}[${idx}] ->`, preset);
             responderJSON(res, 200, { ok: true, preset: preset });
@@ -193,5 +206,5 @@ const servidor = https.createServer(opciones, (req, res) => {
 });
 
 servidor.listen(PUERTO, () => {
-    console.log(`[HTTPS] Servidor corriendo en https://192.168.100.6:${PUERTO}`);
+    console.log(`[HTTPS] Servidor corriendo en https://${ipBridge}:${PUERTO}`);
 });

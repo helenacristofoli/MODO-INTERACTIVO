@@ -1,5 +1,4 @@
 import uuid
-import json
 import os
 from datetime import datetime, timedelta
 
@@ -9,8 +8,9 @@ import win32print
 import win32ui
 import pywintypes
 
+import codes_store
+
 # ── Configuración ──────────────────────────────────────────
-RUTA_CODIGOS = "codes/codes.json"
 RUTA_LOGO = "assets/logo.png"
 NOMBRE_IMPRESORA = "MP-POS58"
 ANCHO_PAPEL_PX = 384  # 48mm útil a 203dpi
@@ -21,40 +21,6 @@ FUENTE_INSTRUCCIONES = "arialbd.ttf"  # bold, para que se vea sólido y no gris
 # win32print no los expone como constantes, así que los ponemos a mano.
 ESTADO_ERROR = 0x00000002
 ESTADO_OFFLINE = 0x00000080
-
-
-# ── Registro de código ───────────────────────────────────────
-
-def inicializar_archivo():
-    os.makedirs("codes", exist_ok=True)
-    if not os.path.exists(RUTA_CODIGOS):
-        with open(RUTA_CODIGOS, "w") as f:
-            json.dump({}, f)
-
-
-def registrar_codigo(codigo):
-    """
-    Guarda el código en codes.json como válido.
-    Se llama tanto si el ticket salió impreso como si quedó
-    solo en digital -- en ambos casos es una emisión válida.
-    """
-    inicializar_archivo()
-    with open(RUTA_CODIGOS, "r") as f:
-        codigos = json.load(f)
-
-    ahora = datetime.now()
-    expiracion = ahora + timedelta(days=1)
-
-    codigos[codigo] = {
-        "creado": ahora.strftime("%Y-%m-%d %H:%M:%S"),
-        "expira": expiracion.strftime("%Y-%m-%d %H:%M:%S"),
-        "usado": False
-    }
-
-    with open(RUTA_CODIGOS, "w") as f:
-        json.dump(codigos, f, indent=4)
-
-    print(f"Código registrado: {codigo}")
 
 
 # ── Detección de impresora ───────────────────────────────────
@@ -237,7 +203,10 @@ def emitir_ticket():
     else:
         print(f"[DIGITAL] Impresora no disponible. Ticket guardado en {ruta_imagen}")
 
-    registrar_codigo(codigo)
+    # Antes: registrar_codigo(codigo) local, con open()/json.dump() directo.
+    # Ahora: delega en codes_store, que centraliza el lock y la escritura
+    # atómica (ver codes_store.py para el porqué).
+    codes_store.registrar_codigo(codigo)
     return codigo, impreso_fisico
 
 

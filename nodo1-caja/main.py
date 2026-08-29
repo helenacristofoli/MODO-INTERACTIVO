@@ -1,36 +1,38 @@
 import tkinter as tk
 from tkinter import messagebox
 import threading
-import json
-import os
 from datetime import datetime
 from generator import emitir_ticket as generar_ticket_completo
 from server import iniciar_servidor
 from cleanup_codes import limpiar_codigos
+import codes_store
 
-# ── Configuración ──────────────────────────────────────────
-RUTA_CODIGOS = "codes/codes.json"
+# Cada cuánto se repite la limpieza mientras la app queda abierta.
+# Antes, limpiar_codigos() corría UNA sola vez al arrancar -- si el
+# cajero deja main.py corriendo varios días seguidos sin reiniciar
+# (nada raro en un evento largo), codes.json podía crecer sin límite
+# hasta el próximo arranque. Con esto, se repite sola de fondo.
+INTERVALO_LIMPIEZA_MS = 6 * 60 * 60 * 1000  # 6 horas
 
 # ── Funciones de soporte ────────────────────────────────────
 
 def contar_tickets_hoy():
     """
     Cuenta cuántos tickets se generaron hoy.
-    Lee el codes.json y filtra por fecha de creación.
+    Antes: open()/json.load() directo sobre codes.json.
+    Ahora: codes_store.leer_codigos() -- mismo punto único de acceso
+    que usan generator.py y server.py, así esta lectura tampoco puede
+    pisarse con una escritura concurrente.
     """
-    if not os.path.exists(RUTA_CODIGOS):
-        return 0
-    
-    with open(RUTA_CODIGOS, "r") as f:
-        codigos = json.load(f)
-    
+    codigos = codes_store.leer_codigos()
+
     hoy = datetime.now().strftime("%Y-%m-%d")
     count = 0
-    
+
     for datos in codigos.values():
         if datos["creado"].startswith(hoy):
             count += 1
-    
+
     return count
 
 def emitir_ticket():
@@ -75,6 +77,28 @@ def iniciar_servidor_hilo():
     """
     hilo = threading.Thread(target=iniciar_servidor, daemon=True)
     hilo.start()
+
+def programar_limpieza_periodica(ventana):
+    """
+    Corre limpiar_codigos() y se reprograma sola cada
+    INTERVALO_LIMPIEZA_MS -- mientras main.py siga abierto, la limpieza
+    se sigue repitiendo de fondo sin bloquear la interfaz.
+
+    ventana.after(ms, funcion) es el mecanismo propio de tkinter para
+    esto: en vez de un thread aparte con time.sleep() (que podría pisar
+    la interfaz si no se maneja con cuidado), tkinter mismo agenda la
+    llamada dentro de su propio loop de eventos -- el mismo loop que ya
+    atiende clicks de botones. Es conceptualmente el mismo patrón que
+    setInterval() en app.js, adaptado al mundo de tkinter.
+    """
+    try:
+        limpiar_codigos()
+    except Exception as e:
+        # Una limpieza fallida no debería tirar abajo la app entera --
+        # se loguea y se reintenta en el próximo ciclo igual.
+        print(f"[AVISO] Falló la limpieza periódica: {e}")
+
+    ventana.after(INTERVALO_LIMPIEZA_MS, lambda: programar_limpieza_periodica(ventana))
 
 # ── Interfaz gráfica ────────────────────────────────────────
 
@@ -181,4 +205,11 @@ if __name__ == "__main__":
 
     ventana = tk.Tk()
     construir_ui(ventana)
+
+    # Arranca el ciclo de limpieza periódica -- la primera ejecución
+    # programada ocurre recién dentro de INTERVALO_LIMPIEZA_MS (la
+    # limpieza de "arranque" ya se hizo arriba, antes de crear la
+    # ventana, así que no hace falta duplicarla acá).
+    ventana.after(INTERVALO_LIMPIEZA_MS, lambda: programar_limpieza_periodica(ventana))
+
     ventana.mainloop()

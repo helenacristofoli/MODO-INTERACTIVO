@@ -303,7 +303,7 @@ body {
     width: 100%;
     max-width: 500px;
     height: 6px;
-    background-color: #3A3A3A;
+    background-color: #2B2B2B;
     border-radius: 3px;
     margin-bottom: 24px;
     overflow: visible;
@@ -360,6 +360,224 @@ body {
     height: 100%;
     pointer-events: none;
 }
+
+/* ── Botón: Cámara en vivo ────────────────────────────────────
+   Único y alargado, fuera del grid de layers — pero visualmente
+   tiene que sentirse parte de la misma familia que los botones de
+   preset: mismo tratamiento de "seleccionado" (glow blanco), misma
+   tipografía y letter-spacing que .layer-name / .btn-label.
+
+   Tratamiento metalizado: gradiente vertical claro-oscuro-claro
+   (simula una superficie curva, como un bisel de aluminio cepillado),
+   más un inset highlight arriba y sombra abajo para dar sensación de
+   espesor real, más un brillo diagonal que recorre el botón una sola
+   vez al pasar el mouse/tocar (no en loop — un shine permanente da
+   una sensación barata, no metálica de verdad).
+   ─────────────────────────────────────────────────────────── */
+.btn-camara-viva {
+    position: relative; /* ancla para el brillo (::before) */
+    width: 100%;
+    margin-top: 4px;
+    padding: 16px 24px;
+    overflow: hidden; /* recorta el brillo a los bordes redondeados del botón */
+
+    /* Metal translúcido -- deja ver el panel oscuro de fondo por
+       debajo (menos contraste que el metal sólido de antes), pero
+       sigue siendo un gradiente real de bandas claro-oscuro-claro,
+       no un solo tono plano. */
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.42) 15%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.42) 85%,
+        rgba(255, 255, 255, 0.75) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    cursor: pointer;
+
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),   /* highlight — borde superior "iluminado" */
+        inset 0 -1px 0 rgba(0, 0, 0, 0.3),         /* sombra — borde inferior "en penumbra" */
+        0 2px 6px rgba(0, 0, 0, 0.25);              /* el botón se despega un poco del panel */
+
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+/* El brillo diagonal — arranca fuera del botón (a la izquierda) y
+   recorre hacia la derecha SOLO cuando se dispara la animación en
+   :hover. skewX() lo inclina para que lea como un reflejo de luz
+   sobre metal, no como una barra recta. */
+.btn-camara-viva::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(
+        115deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.22) 45%,
+        rgba(255, 255, 255, 0.42) 50%,
+        rgba(255, 255, 255, 0.22) 55%,
+        transparent 100%
+    );
+    transform: skewX(-18deg);
+    pointer-events: none;
+}
+
+.btn-camara-viva:hover::before {
+    animation: brillo-metalico 0.85s ease forwards;
+}
+
+@keyframes brillo-metalico {
+    from { left: -60%; }
+    to   { left: 130%; }
+}
+
+.btn-camara-viva:hover {
+    border-color: rgba(255, 255, 255, 0.75);
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.85) 0%,
+        rgba(255, 255, 255, 0.5) 15%,
+        rgba(255, 255, 255, 0.34) 50%,
+        rgba(255, 255, 255, 0.5) 85%,
+        rgba(255, 255, 255, 0.85) 100%
+    );
+}
+
+.btn-camara-label {
+    position: relative; /* queda por encima del brillo (::before) */
+    font-size: 1.1rem;    /* más grande aún */
+    font-weight: 800;      /* más bold */
+    letter-spacing: 4px;   /* igual que .layer-name */
+    font-family: var(--font-ui);
+    color: #3a3a3a;         /* gris oscuro intermedio */
+    transition: color 0.15s;
+}
+
+/* Estado activo — mismo lenguaje visual que .sel-visual/.sel-effects/.sel-color:
+   el metal se aclara (como si el bisel "encendiera") y el texto pasa a
+   blanco para que la selección se lea clara, más el halo blanco por
+   capas de siempre. */
+.btn-camara-viva.activa {
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.95) 0%,
+        rgba(255, 255, 255, 0.6) 14%,
+        rgba(255, 255, 255, 0.42) 50%,
+        rgba(255, 255, 255, 0.6) 86%,
+        rgba(255, 255, 255, 0.95) 100%
+    );
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.9),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+        0 0 2px rgba(255, 255, 255, 1),
+        0 0 10px rgba(255, 255, 255, 0.6),
+        0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.btn-camara-viva.activa .btn-camara-label {
+    color: var(--color-blanco);
+}
+
+/* Estado deshabilitado — la cámara falló y no se pudo reconectar sola.
+   Distinto del estado normal en reposo: acá queremos que se vea
+   claramente "apagado", no solo "sin seleccionar". Sin brillo ni
+   relieve -- un metal "deshabilitado" se ve chato, no reluciente. */
+.btn-camara-viva.deshabilitado {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.btn-camara-viva.deshabilitado::before {
+    display: none;
+}
+
+.btn-camara-viva.deshabilitado:hover {
+    border-color: rgba(255, 255, 255, 0.6); /* anula el hover normal */
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.75) 0%,
+        rgba(255, 255, 255, 0.42) 15%,
+        rgba(255, 255, 255, 0.28) 50%,
+        rgba(255, 255, 255, 0.42) 85%,
+        rgba(255, 255, 255, 0.75) 100%
+    );
+}
+
+/* ── Preview de cámara en vivo ─────────────────────────────────
+   Muestra el mismo stream que ya está corriendo (no pide getUserMedia
+   de nuevo — ver activarCamaraViva() en app.js), en una esquina fija
+   de la pantalla, solo mientras la cámara en vivo está activa.
+   ─────────────────────────────────────────────────────────── */
+.camara-preview-wrap {
+    position: fixed;
+    top: 32px;
+    left: 32px;
+    width: 260px;
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(20, 20, 20, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow:
+        0 0 2px rgba(255, 255, 255, 0.8),
+        0 4px 14px rgba(0, 0, 0, 0.4);
+
+    z-index: 50;
+
+    /* Oculto por defecto -- app.js agrega .visible cuando la cámara
+       en vivo se activa, y la saca cuando se apaga. */
+    display: none;
+}
+
+.camara-preview-wrap.visible {
+    display: block;
+}
+
+#camara-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.camara-preview-etiqueta {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--color-blanco);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.camara-preview-etiqueta::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #e05252; /* mismo rojo que .urgente en la barra de tiempo */
+    box-shadow: 0 0 4px rgba(224, 82, 82, 0.9);
+    animation: parpadeo-en-vivo 1.4s ease-in-out infinite;
+}
+
+@keyframes parpadeo-en-vivo {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+}
+
 
 /* ── Pantalla: Despedida ──────────────────────────────────── */
 #pantalla-despedida {
