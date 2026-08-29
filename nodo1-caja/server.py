@@ -1,51 +1,9 @@
-import json
-import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
-RUTA_CODIGOS = "codes/codes.json"
+import codes_store
 
-def validar_codigo(codigo):
-    """
-    Verifica si un código es válido.
-    Retorna True si existe, no expiró y no fue usado.
-    Similar a buscar un elemento en un array de structs en C.
-    """
-    if not os.path.exists(RUTA_CODIGOS):
-        return False
-    
-    with open(RUTA_CODIGOS, "r") as f:
-        codigos = json.load(f)
-    
-    # ¿Existe el código?
-    if codigo not in codigos:
-        return False
-    
-    datos = codigos[codigo]
-    
-    # ¿Ya fue usado?
-    if datos["usado"]:
-        return False
-    
-    # ¿Expiró?
-    expiracion = datetime.strptime(datos["expira"], "%Y-%m-%d %H:%M:%S")
-    if datetime.now() > expiracion:
-        return False
-    
-    return True
-
-def marcar_usado(codigo):
-    """
-    Marca el código como usado para que no pueda usarse de nuevo.
-    """
-    with open(RUTA_CODIGOS, "r") as f:
-        codigos = json.load(f)
-    
-    codigos[codigo]["usado"] = True
-    
-    with open(RUTA_CODIGOS, "w") as f:
-        json.dump(codigos, f, indent=4)
 
 class ManejadorQR(BaseHTTPRequestHandler):
     """
@@ -66,12 +24,35 @@ class ManejadorQR(BaseHTTPRequestHandler):
                 return
             
             codigo = params["code"][0]
-            
-            if validar_codigo(codigo):
-                marcar_usado(codigo)
+
+            # Antes: validar_codigo(codigo) y, si daba True, marcar_usado(codigo)
+            # aparte -- dos operaciones separadas, sin lock entre medio.
+            # Ahora: codes_store hace las dos cosas en una sola operación
+            # atómica (ver codes_store.py), así ningún otro hilo puede
+            # colarse entre el chequeo y la marca.
+            if codes_store.validar_y_marcar_usado(codigo):
                 self._responder(200, "válido")
             else:
                 self._responder(200, "inválido")
+
+        # ── Consulta de solo lectura para Nodo 3 (bridge) ──────────
+        # El bridge llama acá antes de ejecutar cualquier preset que
+        # venga con un "code" por WebSocket, para confirmar que
+        # corresponde a una sesión real y no a un mensaje armado a
+        # mano por alguien conectado a la misma wifi.
+        elif url.path == "/session-activa":
+
+            if "code" not in params:
+                self._responder(400, "falta el parámetro code")
+                return
+
+            codigo = params["code"][0]
+
+            if codes_store.esta_activo(codigo):
+                self._responder(200, "activo")
+            else:
+                self._responder(200, "inactivo")
+
         else:
             self._responder(404, "ruta no encontrada")
     
